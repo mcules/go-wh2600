@@ -10,6 +10,8 @@ import (
 
 func main() {
 	var mqtt models.Mqtt
+	mqttTopic := "YOURE_TOPIC"
+
 	mqtt.Connect("tcp://broker.emqx.io:1883")
 
 	r := gin.Default()
@@ -28,7 +30,7 @@ func main() {
 			"message": "done",
 		})
 
-		mqtt.Publish("fff/kgb/wart/ws", 0, true, string(res))
+		mqtt.Publish(mqttTopic, 0, true, string(res))
 	})
 	r.Run(":8030")
 
