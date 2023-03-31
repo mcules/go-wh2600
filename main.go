@@ -5,20 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	config "github.com/spf13/viper"
 	"net/http"
 )
 
 func main() {
 	var mqtt models.Mqtt
-	mqttTopic := "YOURE_TOPIC"
+	var err error
 
-	mqtt.Connect("tcp://broker.emqx.io:1883")
+	// get config from env file
+	config.SetConfigFile(".env")
+	if err = config.ReadInConfig(); err != nil {
+		fmt.Println(err)
+	}
 
+	// connect to mqtt broker
+	mqtt.Connect(config.Get("MQTT_PROTOCOL").(string)+"://"+config.Get("MQTT_BROKER").(string)+":"+config.Get("MQTT_PORT").(string), config.Get("MQTT_CLIENT_ID").(string))
+
+	// create webserver routes
 	r := gin.Default()
 	r.GET("/weatherstation/updateweatherstation.php", func(c *gin.Context) {
 		var weatherData models.WeatherData
 
-		c.Bind(&weatherData)
+		if err := c.Bind(&weatherData); err != nil {
+			fmt.Println(err)
+		}
 		weatherData.Recalc()
 
 		res, err := json.Marshal(weatherData)
@@ -27,12 +38,17 @@ func main() {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"message": "done",
+			"message": "ok",
 		})
 
-		mqtt.Publish(mqttTopic, 0, true, string(res))
+		// publish data to mqtt
+		mqtt.Publish(config.Get("MQTT_TOPIC").(string), 0, true, string(res))
 	})
-	r.Run(":8030")
+	// start webserver
+	if err := r.Run(":" + config.Get("WEBSERVER_PORT").(string)); err != nil {
+		fmt.Println(err)
+	}
 
+	// close mqtt connection
 	mqtt.Disconnect()
 }

@@ -13,7 +13,7 @@ type Mqtt struct {
 	ConnectionLostHandler paho.ConnectionLostHandler
 }
 
-func (mqtt *Mqtt) Connect(broker string) {
+func (mqtt *Mqtt) Connect(broker string, clientId string) {
 	mqtt.MessagePubHandler = func(client paho.Client, msg paho.Message) {
 		fmt.Printf("Message %s received on topic %s\n", msg.Payload(), msg.Topic())
 	}
@@ -26,7 +26,7 @@ func (mqtt *Mqtt) Connect(broker string) {
 
 	options := paho.NewClientOptions()
 	options.AddBroker(broker)
-	options.SetClientID("go_mqtt_example")
+	options.SetClientID(clientId)
 	options.SetDefaultPublishHandler(mqtt.MessagePubHandler)
 	options.OnConnect = mqtt.ConnectHandler
 	options.OnConnectionLost = mqtt.ConnectionLostHandler
